@@ -7,7 +7,7 @@ DEFAULT_DATA = {
     "queue": [],      
     "users": {},      
     "auth_users": [], 
-    "settings": {"time": "18:00"}, # Default 6 PM
+    "settings": {"time": "18:00"},
     "daily_stats": {"topper": "Pending..."}
 }
 
