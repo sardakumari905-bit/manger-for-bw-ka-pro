@@ -39,7 +39,7 @@ async def post_init(app):
     # Jobs
     app.job_queue.run_daily(job_send_test, time(hour=int(t[0]), minute=int(t[1]), tzinfo=pytz.timezone('Asia/Kolkata')))
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=30, tzinfo=pytz.timezone('Asia/Kolkata')))
-    app.job_queue.run_daily(job_morning_motivation, time(hour=6, minute=0, tzinfo=pytz.timezone('Asia/Kolkata')))
+    app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=pytz.timezone('Asia/Kolkata')))
     
     print("✅ Version 8.0 Running!")
 
