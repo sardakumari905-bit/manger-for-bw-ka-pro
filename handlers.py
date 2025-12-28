@@ -12,9 +12,9 @@ ASK_DAY, ASK_LINK = range(2)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if is_admin(user.id):
-        caption = f"👑 **Boss: {user.first_name}**"
+        caption = f"👑 **Boss: {user.first_name}**\n\n👇 **Control Panel:**"
         keyboard = [
-            [InlineKeyboardButton("🚀 QUICK START", callback_data='menu_quick_start')],
+            [InlineKeyboardButton("🚀 QUICK START (Testing)", callback_data='menu_quick_start')],
             [InlineKeyboardButton("➕ Add Link", callback_data='add_link_flow'),
              InlineKeyboardButton("📢 Broadcast", callback_data='help_broadcast')],
             [InlineKeyboardButton("⏰ Set Timer", callback_data='menu_timer'),
@@ -26,12 +26,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_photo(photo=START_IMG, caption=caption, reply_markup=InlineKeyboardMarkup(keyboard))
 
+# --- NEW COMMAND: ADD ADMIN (Ye miss ho gaya tha) ---
+async def add_user_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return # Sirf Owner kar sakta hai
+    
+    if not context.args:
+        await update.message.reply_text("❌ Usage: `/add_user 12345678` (ID daalein)")
+        return
+    
+    try:
+        new_id = int(context.args[0])
+        db = load_data()
+        if new_id not in db["auth_users"]:
+            db["auth_users"].append(new_id)
+            save_data(db)
+            await update.message.reply_text(f"✅ **New Admin Added:** {new_id}\n(Ab ye bhi bot control kar sakta hai)")
+        else:
+            await update.message.reply_text("ℹ️ Ye ID pehle se Admin hai.")
+    except:
+        await update.message.reply_text("❌ Kripya valid Number ID daalein.")
+
 # --- AUTO DETECT TOPPER ---
 async def handle_forwarded_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     text = update.message.text or update.message.caption or ""
     
-    # QuizBot result detection logic
     if "🏆" in text or "Quiz" in text or "Results" in text:
         try:
             lines = text.split('\n')
@@ -50,7 +69,7 @@ async def handle_forwarded_result(update: Update, context: ContextTypes.DEFAULT_
         except Exception as e:
             await update.message.reply_text(f"❌ Error: {e}")
 
-# --- COMMANDS ---
+# --- OTHER COMMANDS ---
 async def set_topper_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     if not context.args: await update.message.reply_text("❌ Usage: `/set_topper Name`"); return
@@ -82,7 +101,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     db = load_data()
     topper = db.get("daily_stats", {}).get("topper", "None")
-    txt = f"📊 **STATUS**\nGroups: {len(db['groups'])}\nQueue: {len(db['queue'])}\nTime: {db['settings']['time']}\nTopper: {topper}"
+    txt = f"📊 **STATUS**\nGroups: {len(db['groups'])}\nQueue: {len(db['queue'])}\nTime: {db['settings']['time']}\nTopper: {topper}\nAdmins: {len(db['auth_users'])+1}"
     await update.message.reply_text(txt)
 
 # --- BUTTON HANDLER ---
@@ -125,10 +144,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         queue = get_queue_list()
         if index < len(queue):
             test = queue[index]
-            await query.message.reply_text(f"⏳ **Starting {test['day']}...**\n(Attendance Msg Sent!)")
+            await query.message.reply_text(f"⏳ **Starting {test['day']}...**\n(Sequence: Attendance -> Pin -> Link)")
             db = load_data()
             for gid in db["groups"]:
-                # Triggering the sequence: Attendance -> Pin -> Link
                 context.application.create_task(execute_test_logic(context, gid, test))
                 
     elif data == 'back_home': await start(query, context)
@@ -136,7 +154,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == 'add_link_flow': await query.message.reply_text("Likhein: `/add_link`")
     elif data == 'help_broadcast': await query.message.reply_text("Likhein: `/broadcast Message`")
 
-# --- ATTENDANCE MARKING ---
+# --- ATTENDANCE ---
 async def mark_attendance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     uid = str(query.from_user.id)
@@ -150,17 +168,17 @@ async def mark_attendance(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db["users"][uid]["last_date"] = today
         db["users"][uid]["name"] = query.from_user.first_name
         save_data(db)
-        await query.answer("✅ Present Sir! (Attendance Marked)", show_alert=True)
+        await query.answer("✅ Attendance Marked!", show_alert=True)
 
-# --- CONVERSATION FOR ADD LINK ---
+# --- CONVERSATION ---
 async def start_add_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return ConversationHandler.END
-    await update.message.reply_text("📝 **Topic Name?**\n(e.g., Day 5 Physics)")
+    await update.message.reply_text("📝 **Topic Name?**")
     return ASK_DAY
 
 async def receive_day(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['day'] = update.message.text
-    await update.message.reply_text("🔗 **Paste QuizBot Link:**")
+    await update.message.reply_text("🔗 **QuizBot Link?**")
     return ASK_LINK
 
 async def receive_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -169,7 +187,7 @@ async def receive_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db = load_data()
     db["queue"].append({"day": day, "link": link})
     save_data(db)
-    await update.message.reply_text(f"✅ **Saved!** {day}\nQueue Size: {len(db['queue'])}")
+    await update.message.reply_text(f"✅ **Saved!** {day}")
     return ConversationHandler.END
 
 async def cancel(u, c): await u.message.reply_text("❌ Cancelled"); return ConversationHandler.END
