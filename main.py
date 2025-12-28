@@ -11,9 +11,9 @@ from database import load_data
 from handlers import (
     start, add_group, status, broadcast_cmd, button_handler, mark_attendance,
     start_add_link, receive_day, receive_link, cancel, set_topper_cmd, add_user_cmd, 
-    handle_forwarded_result, show_leaderboard, ASK_DAY, ASK_LINK
+    handle_forwarded_result, show_leaderboard, show_profile, ASK_DAY, ASK_LINK
 )
-from jobs import job_send_test, job_nightly_report, job_morning_motivation # <--- Added job
+from jobs import job_send_test, job_nightly_report, job_morning_motivation
 
 app_web = Flask('')
 @app_web.route('/')
@@ -26,9 +26,9 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=lo
 async def post_init(app):
     await app.bot.set_my_commands([
         ("start", "Menu"),
+        ("profile", "My Report Card"),
         ("leaderboard", "Top Students"),
-        ("add_group", "Connect"),
-        ("broadcast", "Announcement"),
+        ("add_group", "Connect Group"),
         ("add_link", "Add Quiz"),
         ("status", "Reports")
     ])
@@ -36,16 +36,12 @@ async def post_init(app):
     db = load_data()
     t = db["settings"]["time"].split(":")
     
-    # 1. Daily Test Job
+    # Jobs
     app.job_queue.run_daily(job_send_test, time(hour=int(t[0]), minute=int(t[1]), tzinfo=pytz.timezone('Asia/Kolkata')))
-    
-    # 2. Nightly Report (9:30 PM)
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=30, tzinfo=pytz.timezone('Asia/Kolkata')))
+    app.job_queue.run_daily(job_morning_motivation, time(hour=6, minute=0, tzinfo=pytz.timezone('Asia/Kolkata')))
     
-    # 3. Morning Motivation (5:00 AM) <--- NEW
-    app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=pytz.timezone('Asia/Kolkata')))
-    
-    print("✅ Ultra Pro Bot (v7.0) Started!")
+    print("✅ Version 8.0 Running!")
 
 if __name__ == "__main__":
     keep_alive()
@@ -57,7 +53,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
     app.add_handler(CommandHandler("set_topper", set_topper_cmd))
     app.add_handler(CommandHandler("add_user", add_user_cmd))
-    app.add_handler(CommandHandler("leaderboard", show_leaderboard)) # <--- Command
+    app.add_handler(CommandHandler("leaderboard", show_leaderboard))
+    app.add_handler(CommandHandler("profile", show_profile)) # <--- NEW
     
     app.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_result))
 
@@ -71,7 +68,7 @@ if __name__ == "__main__":
     )
     app.add_handler(conv)
 
-    app.add_handler(CallbackQueryHandler(button_handler, pattern='^menu_|time_|add_link_|status_|help_|fire_|back_|show_'))
+    app.add_handler(CallbackQueryHandler(button_handler, pattern='^menu_|time_|add_link_|status_|help_|fire_|back_|show_|my_'))
     app.add_handler(CallbackQueryHandler(mark_attendance, pattern='attendance_done'))
 
     app.run_polling()
