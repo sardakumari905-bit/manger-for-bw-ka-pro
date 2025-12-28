@@ -1,0 +1,4 @@
+python-telegram-bot[job-queue]
+pytz
+nest_asyncio
+flask
