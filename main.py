@@ -11,6 +11,7 @@ from telegram.ext import (
     ConversationHandler, MessageHandler, filters, ContextTypes
 )
 
+# --- FIX BUTTON JAM ISSUE ---
 nest_asyncio.apply()
 
 from config import BOT_TOKEN
@@ -20,7 +21,7 @@ from handlers import (
     start_add_link, receive_date, receive_topic, receive_link, cancel, 
     start_broadcast_btn, send_broadcast_btn, 
     start_add_admin_btn, receive_admin_id_btn,
-    start_custom_time, receive_custom_time,  # <--- NEW IMPORTS
+    start_custom_time, receive_custom_time,
     show_leaderboard, show_profile, handle_forwarded_result, 
     ASK_DATE, ASK_TOPIC, ASK_LINK, ASK_BROADCAST_MSG, ASK_ADMIN_ID, ASK_CUSTOM_TIME
 )
@@ -28,29 +29,27 @@ from jobs import job_send_test, job_nightly_report, job_morning_motivation
 
 app_web = Flask('')
 @app_web.route('/')
-def home(): return "Final Bot Live 🟢"
+def home(): return "BW Bot is Live 🟢"
 def run_http(): app_web.run(host='0.0.0.0', port=8080)
 def keep_alive(): t = Thread(target=run_http); t.start()
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 async def post_init(app):
-    await app.bot.set_my_commands([("start", "Control Panel")])
-    
+    await app.bot.set_my_commands([("start", "Open Menu")])
     db = load_data()
-    t_str = db["settings"].get("time", "18:00")
+    t_str = db["settings"].get("time", "16:00")
     h, m = map(int, t_str.split(":"))
-    
     app.job_queue.run_daily(job_send_test, time(hour=h, minute=m, tzinfo=pytz.timezone('Asia/Kolkata')))
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=30, tzinfo=pytz.timezone('Asia/Kolkata')))
     app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=pytz.timezone('Asia/Kolkata')))
-    
-    print("✅ Bot Started (All Features Fixed)")
+    print("✅ Version 16.0 (Final Fix) Started!")
 
 if __name__ == "__main__":
     keep_alive()
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
+    # Commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("add_group", add_group))
     app.add_handler(CommandHandler("reset_all", reset_all_cmd))
