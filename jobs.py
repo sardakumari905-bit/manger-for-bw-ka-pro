@@ -5,8 +5,7 @@ from database import load_data, save_data, get_test_by_date
 from config import OWNER_ID
 from datetime import datetime, date
 
-# --- EXAM DATE SETTING ---
-EXAM_DATE = date(2026, 2, 12) # Board Exam Date
+EXAM_DATE = date(2026, 2, 12) # <--- Exam Date Change Kar Lena
 
 MORNING_QUOTES = [
     "Waqt kam hai, jitna dam hai laga do!",
@@ -16,7 +15,7 @@ MORNING_QUOTES = [
     "Bina thake, bina ruke, bas chalna hai."
 ]
 
-# --- 1. MORNING MOTIVATION ---
+# --- 1. MORNING JOB ---
 async def job_morning_motivation(context):
     db = load_data()
     quote = random.choice(MORNING_QUOTES)
@@ -27,15 +26,15 @@ async def job_morning_motivation(context):
         f"⏳ **Countdown:** {days_left} Days Left for Exam\n"
         "➖➖➖➖➖➖➖➖➖➖\n"
         f"💡 _'{quote}'_\n\n"
-        "👉 **Note:** Check karein aaj test hai ya nahi!"
+        "👉 **Check Date:** Aaj ki Quiz Scheduled hai ya nahi?"
     )
     for gid in db["groups"]:
         try: await context.bot.send_message(chat_id=gid, text=msg);
         except: pass
 
-# --- TEST SEQUENCE LOGIC ---
+# --- TEST LOGIC (Attendance -> Pin -> Link) ---
 async def execute_test_logic(context, chat_id, test_data):
-    # STEP 1: ATTENDANCE (00:00)
+    # STEP 1: ATTENDANCE
     try:
         btn = [[InlineKeyboardButton("🙋‍♂️ PRESENT SIR", callback_data='attendance_done')]]
         att_msg = (
@@ -43,23 +42,23 @@ async def execute_test_logic(context, chat_id, test_data):
             f"📅 **Date:** {datetime.now().strftime('%d-%m-%Y')}\n"
             f"📌 **Topic:** {test_data['day']}\n\n"
             "⏳ Test starts in **2 Minutes**.\n"
-            "👇 **Haaziri Lagayein (Click Button):**"
+            "👇 **Haaziri Lagayein:**"
         )
         await context.bot.send_message(chat_id=chat_id, text=att_msg, reply_markup=InlineKeyboardMarkup(btn))
     except: pass
 
     await asyncio.sleep(60)
 
-    # STEP 2: PIN ALERT (00:01)
+    # STEP 2: PIN
     try:
-        m = await context.bot.send_message(chat_id=chat_id, text="🚨 **ALERT:**\n          1 Minute Left!")
+        m = await context.bot.send_message(chat_id=chat_id, text="🚨 **ALERT:** 1 Minute Left!")
         try: await context.bot.pin_chat_message(chat_id=chat_id, message_id=m.message_id)
         except: pass
     except: pass
 
     await asyncio.sleep(60)
 
-    # STEP 3: SEND LINK (00:02)
+    # STEP 3: LINK
     try:
         t = (
             "🚀 **TEST STARTED** 🚀\n\n"
@@ -74,16 +73,13 @@ async def execute_test_logic(context, chat_id, test_data):
 # --- 2. SCHEDULER JOB ---
 async def job_send_test(context):
     db = load_data()
-    # Check Today's Schedule
     today_str = datetime.now().strftime("%d-%m-%Y")
     test_data = get_test_by_date(today_str)
     
     if not test_data:
-        # No test today
         await context.bot.send_message(OWNER_ID, f"ℹ️ Aaj ({today_str}) koi Test set nahi hai.")
         return
 
-    # Execute Test
     for gid in db["groups"]:
         asyncio.create_task(execute_test_logic(context, gid, test_data))
 
@@ -95,7 +91,6 @@ async def job_nightly_report(context):
     today_str = datetime.now().strftime("%d-%m-%Y")
     test_data = get_test_by_date(today_str)
     
-    # Agar aaj test nahi tha, to report mat banao
     if not test_data: return
 
     today = str(datetime.now().date())
@@ -118,7 +113,6 @@ async def job_nightly_report(context):
                     except: pass
     
     save_data(db)
-    
     report = f"🌙 **REPORT ({today_str})** 🌙\n\n🏆 **TOPPER:** {topper} 🎉\n\n"
     if absent: report += "❌ **ABSENT:**\n" + ", ".join(absent) + "\n\n"
     if kicked: report += "🚫 **BANNED:**\n" + ", ".join(kicked)
