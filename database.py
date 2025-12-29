@@ -4,10 +4,10 @@ from config import DB_FILE, OWNER_ID
 
 DEFAULT_DATA = {
     "groups": [],
-    "queue": [],      
+    "schedule": {},   # Format: {"01-01-2026": {"day": "Physics", "link": "..."}}
     "users": {},      
     "auth_users": [], 
-    "settings": {"time": "18:00"},
+    "settings": {"time": "16:00"},
     "daily_stats": {"topper": "Pending..."}
 }
 
@@ -18,8 +18,9 @@ def load_data():
     try:
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            for key in DEFAULT_DATA:
-                if key not in data: data[key] = DEFAULT_DATA[key]
+            # Ensure keys exist
+            if "schedule" not in data: data["schedule"] = {}
+            if "users" not in data: data["users"] = {}
             return data
     except:
         return DEFAULT_DATA
@@ -34,16 +35,23 @@ def is_admin(user_id):
 
 def update_time(new_time):
     data = load_data()
-    if "settings" not in data: data["settings"] = {}
     data["settings"]["time"] = new_time
     save_data(data)
 
-def get_queue_list():
+def add_test_to_schedule(date_str, topic, link):
     data = load_data()
-    return data["queue"]
+    data["schedule"][date_str] = {"day": topic, "link": link}
+    save_data(data)
+
+def get_test_by_date(date_str):
+    data = load_data()
+    return data["schedule"].get(date_str, None)
 
 def set_daily_topper(name):
     data = load_data()
-    if "daily_stats" not in data: data["daily_stats"] = {}
     data["daily_stats"]["topper"] = name
     save_data(data)
+
+def reset_bot_data():
+    """Factory Reset"""
+    save_data(DEFAULT_DATA)
