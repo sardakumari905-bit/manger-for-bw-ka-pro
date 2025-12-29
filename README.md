@@ -1,75 +1,79 @@
-# 🦅 RBSE Ultimate Manager Bot (v10.0)
+# 🤖 Board Wallah (BW) Manager Bot [v17.0]
 
 ![Status](https://img.shields.io/badge/Status-Online-brightgreen?style=for-the-badge&logo=telegram)
-![Python](https://img.shields.io/badge/Built_With-Python_3.11-blue?style=for-the-badge&logo=python)
-![Platform](https://img.shields.io/badge/Deploy-Render-violet?style=for-the-badge&logo=render)
+![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)
+![Deploy](https://img.shields.io/badge/Deploy-Render-violet?style=for-the-badge&logo=render)
 
-**The most advanced Coaching Management System on Telegram.**
-Designed specifically for RBSE Class 12th Groups to automate Quizzes, Attendance, Discipline, and Results.
-
----
-
-## 🌟 Exclusive Features
-
-### 📅 1. Smart Scheduler (Set & Forget)
-* **Calendar System:** Schedule tests for specific dates (e.g., `01-01-2026`). The bot automatically wakes up on that date and runs the test.
-* **No Daily Setup:** Setup the whole month in one go.
-
-### 🤖 2. Auto-Attendance & Topper
-* **Forward Magic:** Just forward the `@QuizBot` result to the group.
-* **Auto-Action:** The bot detects the **Topper's Name** AND marks **Attendance** for all students listed in the leaderboard automatically (Backup for those who forgot to click the button).
-
-### 🛡️ 3. Three-Layer Test Security
-* **Layer 1 (00:00):** Attendance Call with Button `[🙋‍♂️ PRESENT SIR]`.
-* **Layer 2 (00:01):** Warning Alert ("1 Min Left") -> **Pinned**.
-* **Layer 3 (00:02):** The real Quiz Link is sent.
-
-### ⏰ 4. Morning Motivation & Exam Countdown
-* **6:00 AM Alarm:** Wakes up students with:
-    * Days Left for Board Exams.
-    * A fresh Motivational Quote.
-    * Today's Test Schedule check.
-
-### 🚫 5. Strict Discipline System (Auto-Kick)
-* Tracks user attendance via unique ID.
-* **3-Strike Rule:** If a student misses 3 tests in a row -> **Auto Ban/Kick**.
+**The Ultimate "All-in-One" Coaching Management System for Telegram.**
+Designed for **RBSE Class 12th** to automate Tests, Attendance, Discipline, and Results using a Smart Menu System.
 
 ---
 
-## 🛠️ Commands List
+## 🌟 Key Features (Pro Edition)
 
-### 👑 Admin Commands (Owner Only)
-| Command | Usage | Description |
-| :--- | :--- | :--- |
-| `/start` | Menu | Opens the Admin Control Panel. |
-| `/add_test` | Interactive | Schedule a test for a future date (Date -> Topic -> Link). |
-| `/custom_time` | `/custom_time 15:00` | Change test timing instantly. |
-| `/broadcast` | `/broadcast Hello` | Send a message to all connected groups. |
-| `/set_topper` | `/set_topper Name` | Manually set the topper if auto-detect fails. |
-| `/add_user` | `/add_user 123456` | Promote a friend to Admin. |
-| `/reset_all` | Command | **FACTORY RESET:** Deletes all data/schedule. |
-| `/status` | Command | Check total groups and scheduled tests. |
+### 🌅 1. Morning Routine (5:00 AM)
+* **Auto-Alarm:** Wakes up students daily at 5 AM.
+* **Content:** Sends a Motivational Quote + Board Exam Countdown.
 
-### 👤 Student Commands
-| Command | Description |
+### 📝 2. The Smart Test System (4:00 PM)
+* **Step 1:** Sends "Attendance Button" `[🙋‍♂️ PRESENT SIR]`.
+* **Step 2:** Sends Warning Alert & Pins the Message.
+* **Step 3:** Automatically sends the Quiz Link.
+
+### 🛡️ 3. Strict Discipline (Auto-Kick)
+* **3-Strike Rule:** If a student misses attendance for **3 consecutive days**, the bot **Auto-Kicks (Bans)** them from the group.
+* **No Mercy:** Keeps the group active and disciplined.
+
+### 🧠 4. Intelligent Attendance
+* **Button Mode:** Students mark present by clicking a button.
+* **Auto-Recovery:** If they forget, just forward the `@QuizBot` result to the group. The bot detects the name and marks attendance automatically!
+
+### 🎮 5. Hybrid Admin Panel (Menu Based)
+No need to remember commands! Just use the Button Menu:
+* **➕ Schedule Test:** Add future tests via Calendar.
+* **📢 Broadcast:** Send announcements to all groups via buttons.
+* **⏰ Set Time:** Change test timing instantly.
+* **🏆 Set Topper:** Manually announce the daily winner.
+* **👮 Add Admin:** Promote team members easily.
+
+---
+
+## 🛠️ How to Use (Commands)
+
+### 👑 Admin Menu (Owner)
+Just type **/start** to open the **Control Panel**.
+| Button | Description |
 | :--- | :--- |
-| `/profile` | View Report Card (Attendance, Rank, Strikes). |
-| `/leaderboard` | View Top 10 Most Regular Students. |
+| **🚀 QUICK START** | Fire a scheduled test immediately. |
+| **➕ Schedule Test** | Add Date, Topic & Link for future tests. |
+| **📢 Broadcast** | Send a message to all connected groups. |
+| **⏰ Set Time** | Change daily test timing (e.g., 16:00). |
+| **🏆 Set Topper** | Manually set today's topper name. |
+| **👮 Add Admin** | Add a new Admin by User ID. |
+| **🗑️ RESET BOT** | Factory Reset (Delete all data). |
+
+### 👤 Student Menu
+Just type **/start** in Bot PM.
+| Button | Description |
+| :--- | :--- |
+| **👤 My Profile** | View Attendance count & Strike status. |
+| **🏆 Leaderboard** | View Top 10 Regular Students. |
 
 ---
 
-## ⚙️ Configuration & Setup
+## 🚀 Deployment Guide (Render)
 
-### 1. File Setup
-Ensure these 6 files are in your repository:
-* `main.py`
-* `config.py`
-* `database.py`
-* `handlers.py`
-* `jobs.py`
-* `requirements.txt`
+### Step 1: Files Required
+Ensure your GitHub repository has these 6 files:
+1. `main.py`
+2. `handlers.py`
+3. `jobs.py`
+4. `database.py`
+5. `config.py`
+6. `requirements.txt`
 
-### 2. Edit `config.py`
+### Step 2: Edit `config.py`
+Open `config.py` and enter your details:
 ```python
-BOT_TOKEN = "YOUR_TOKEN_HERE"  # Get from @BotFather
-OWNER_ID = 123456789             # Your numeric ID
+BOT_TOKEN = "YOUR_BOT_TOKEN_HERE" 
+OWNER_ID = 1234567890  # Your Numeric Telegram ID
