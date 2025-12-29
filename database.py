@@ -6,8 +6,8 @@ DEFAULT_DATA = {
     "groups": [],
     "schedule": {},   
     "users": {},      
-    "auth_users": [], # Admin List
-    "settings": {"time": "18:00"},
+    "auth_users": [], 
+    "settings": {"time": "16:00"}, # 4 PM Default
     "daily_stats": {"topper": "Pending..."}
 }
 
@@ -19,6 +19,7 @@ def load_data():
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
             if "schedule" not in data: data["schedule"] = {}
+            if "users" not in data: data["users"] = {}
             if "auth_users" not in data: data["auth_users"] = []
             return data
     except:
@@ -30,7 +31,6 @@ def save_data(data):
 
 def is_admin(user_id):
     data = load_data()
-    # Owner ya Auth User ho to True
     return user_id == OWNER_ID or user_id in data.get("auth_users", [])
 
 def update_time(new_time):
