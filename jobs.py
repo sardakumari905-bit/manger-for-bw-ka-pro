@@ -6,7 +6,7 @@ from config import OWNER_ID
 from datetime import datetime, date
 
 # --- EXAM DATE SETTING ---
-EXAM_DATE = date(2026, 3, 1) # Board Exam Date
+EXAM_DATE = date(2026, 2, 12) # Board Exam Date
 
 MORNING_QUOTES = [
     "Waqt kam hai, jitna dam hai laga do!",
