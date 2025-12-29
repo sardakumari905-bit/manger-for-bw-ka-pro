@@ -5,53 +5,54 @@ from database import load_data, save_data, get_test_by_date
 from config import OWNER_ID
 from datetime import datetime, date
 
-EXAM_DATE = date(2026, 2, 12) # <--- Exam Date Change Kar Lena
+# --- EXAM DATE (Change this if needed) ---
+EXAM_DATE = date(2026, 2, 12)
 
 MORNING_QUOTES = [
-    "Waqt kam hai, jitna dam hai laga do!",
-    "Aaj ka mushkil sawal, kal ka aasaan jawab banega.",
-    "Exam pass hai, sona kam aur padhna jyada shuru karo.",
-    "Success ki chabi: Consistency + Hard Work.",
-    "Bina thake, bina ruke, bas chalna hai."
+    "Utho, Jaago aur tab tak mat ruko jab tak lakshya na mil jaye!",
+    "Aaj ka dard kal ki taqat banega.",
+    "Sapne wo nahi jo neend me aate hain, sapne wo hain jo neend uda dete hain.",
+    "Board Exam pass hai, ab time waste mat karo.",
+    "Consistency is the key to Success."
 ]
 
-# --- 1. MORNING JOB ---
+# --- 1. MORNING MOTIVATION (5:00 AM) ---
 async def job_morning_motivation(context):
     db = load_data()
     quote = random.choice(MORNING_QUOTES)
     days_left = (EXAM_DATE - datetime.now().date()).days
     
     msg = (
-        "🌅 **GOOD MORNING STUDENTS!** 🌅\n\n"
-        f"⏳ **Countdown:** {days_left} Days Left for Exam\n"
+        "🌅 **GOOD MORNING BW STUDENTS!** 🌅\n\n"
+        f"⏳ **Board Exam Countdown:** {days_left} Days Left\n"
         "➖➖➖➖➖➖➖➖➖➖\n"
         f"💡 _'{quote}'_\n\n"
-        "👉 **Check Date:** Aaj ki Quiz Scheduled hai ya nahi?"
+        "👉 **Reminder:** Aaj shaam 4 baje Test hai. Taiyar rehna!"
     )
     for gid in db["groups"]:
         try: await context.bot.send_message(chat_id=gid, text=msg);
         except: pass
 
-# --- TEST LOGIC (Attendance -> Pin -> Link) ---
+# --- TEST LOGIC (4:00 PM) ---
 async def execute_test_logic(context, chat_id, test_data):
     # STEP 1: ATTENDANCE
     try:
         btn = [[InlineKeyboardButton("🙋‍♂️ PRESENT SIR", callback_data='attendance_done')]]
         att_msg = (
-            "🔔 **ATTENDANCE CALL** 🔔\n\n"
+            "🔔 **ATTENDANCE CALL (BW)** 🔔\n\n"
             f"📅 **Date:** {datetime.now().strftime('%d-%m-%Y')}\n"
-            f"📌 **Topic:** {test_data['day']}\n\n"
+            f"📌 **Subject:** {test_data['day']}\n\n"
             "⏳ Test starts in **2 Minutes**.\n"
-            "👇 **Haaziri Lagayein:**"
+            "👇 **Button dabakar Haaziri Lagayein:**"
         )
         await context.bot.send_message(chat_id=chat_id, text=att_msg, reply_markup=InlineKeyboardMarkup(btn))
     except: pass
 
     await asyncio.sleep(60)
 
-    # STEP 2: PIN
+    # STEP 2: PIN ALERT
     try:
-        m = await context.bot.send_message(chat_id=chat_id, text="🚨 **ALERT:** 1 Minute Left!")
+        m = await context.bot.send_message(chat_id=chat_id, text="🚨 **ALERT:** \n 1 Minute Left!")
         try: await context.bot.pin_chat_message(chat_id=chat_id, message_id=m.message_id)
         except: pass
     except: pass
@@ -62,10 +63,10 @@ async def execute_test_logic(context, chat_id, test_data):
     try:
         t = (
             "🚀 **TEST STARTED** 🚀\n\n"
-            f"📌 **Topic:** {test_data['day']}\n"
+            f"📌 **Subject:** {test_data['day']}\n"
             f"👇 **Click Link below:**\n\n"
             f"{test_data['link']}\n\n"
-            "_(Quiz dekar wapas aana)_"
+            "_(Test dekar wapas aana)_"
         )
         await context.bot.send_message(chat_id=chat_id, text=t)
     except: pass
@@ -77,15 +78,15 @@ async def job_send_test(context):
     test_data = get_test_by_date(today_str)
     
     if not test_data:
-        await context.bot.send_message(OWNER_ID, f"ℹ️ Aaj ({today_str}) koi Test set nahi hai.")
+        # Aaj test nahi hai
         return
 
     for gid in db["groups"]:
         asyncio.create_task(execute_test_logic(context, gid, test_data))
+    
+    await context.bot.send_message(OWNER_ID, f"✅ Test Launched for {today_str}: {test_data['day']}")
 
-    await context.bot.send_message(OWNER_ID, f"✅ Test Launched: {test_data['day']}")
-
-# --- 3. NIGHT REPORT ---
+# --- 3. NIGHT REPORT (9:30 PM) ---
 async def job_nightly_report(context):
     db = load_data()
     today_str = datetime.now().strftime("%d-%m-%Y")
