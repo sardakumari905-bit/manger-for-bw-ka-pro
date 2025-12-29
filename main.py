@@ -17,7 +17,7 @@ from jobs import job_send_test, job_nightly_report, job_morning_motivation
 
 app_web = Flask('')
 @app_web.route('/')
-def home(): return "Final Pro Bot Live 🟢"
+def home(): return "Final Bot Live 🟢"
 def run_http(): app_web.run(host='0.0.0.0', port=8080)
 def keep_alive(): t = Thread(target=run_http); t.start()
 
@@ -27,13 +27,15 @@ async def post_init(app):
     await app.bot.set_my_commands([
         ("start", "Menu"),
         ("add_test", "Schedule Quiz"),
+        ("broadcast", "Announcement"),
+        ("add_user", "Make Admin"),
         ("custom_time", "Set Time"),
         ("profile", "My Stats"),
         ("reset_all", "Factory Reset")
     ])
     
     db = load_data()
-    t_str = db["settings"].get("time", "16:00")
+    t_str = db["settings"].get("time", "18:00")
     h, m = map(int, t_str.split(":"))
     
     # JOBS
@@ -41,12 +43,13 @@ async def post_init(app):
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=30, tzinfo=pytz.timezone('Asia/Kolkata')))
     app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=pytz.timezone('Asia/Kolkata')))
     
-    print("✅ Ultra Pro Bot (v10.0) Started!")
+    print("✅ Ultra Pro Bot (v12.0) Started!")
 
 if __name__ == "__main__":
     keep_alive()
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
+    # Commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("add_group", add_group))
     app.add_handler(CommandHandler("custom_time", set_custom_time_cmd))
@@ -57,7 +60,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("add_user", add_user_cmd))
     app.add_handler(CommandHandler("broadcast", broadcast_cmd))
 
-    # 🔥 Forward Handler (Must be before Conversation)
+    # 🔥 Forward Handler (Auto Topper)
     app.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_result))
 
     # Conversation Handler
@@ -72,7 +75,8 @@ if __name__ == "__main__":
     )
     app.add_handler(conv)
 
-    app.add_handler(CallbackQueryHandler(button_handler, pattern='^menu_|add_link_|status_|show_|my_|reset_'))
+    # Callbacks
+    app.add_handler(CallbackQueryHandler(button_handler, pattern='^menu_|add_link_|status_|show_|my_|reset_|help_'))
     app.add_handler(CallbackQueryHandler(mark_attendance, pattern='attendance_done'))
 
     app.run_polling()
