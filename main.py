@@ -11,7 +11,6 @@ from telegram.ext import (
     ConversationHandler, MessageHandler, filters, ContextTypes
 )
 
-# --- FIX BUTTON JAM ISSUE ---
 nest_asyncio.apply()
 
 from config import BOT_TOKEN
@@ -22,40 +21,41 @@ from handlers import (
     start_broadcast_btn, send_broadcast_btn, 
     start_add_admin_btn, receive_admin_id_btn,
     start_custom_time, receive_custom_time,
+    start_set_topper, receive_topper_name,
     show_leaderboard, show_profile, handle_forwarded_result, 
-    ASK_DATE, ASK_TOPIC, ASK_LINK, ASK_BROADCAST_MSG, ASK_ADMIN_ID, ASK_CUSTOM_TIME
+    ASK_DATE, ASK_TOPIC, ASK_LINK, ASK_BROADCAST_MSG, ASK_ADMIN_ID, ASK_CUSTOM_TIME, ASK_TOPPER_NAME
 )
 from jobs import job_send_test, job_nightly_report, job_morning_motivation
 
 app_web = Flask('')
 @app_web.route('/')
-def home(): return "BW Bot is Live 🟢"
+def home(): return "All-Menu Bot Live 🟢"
 def run_http(): app_web.run(host='0.0.0.0', port=8080)
 def keep_alive(): t = Thread(target=run_http); t.start()
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 async def post_init(app):
-    await app.bot.set_my_commands([("start", "Open Menu")])
+    await app.bot.set_my_commands([("start", "Open Control Panel")])
     db = load_data()
     t_str = db["settings"].get("time", "16:00")
     h, m = map(int, t_str.split(":"))
+    
     app.job_queue.run_daily(job_send_test, time(hour=h, minute=m, tzinfo=pytz.timezone('Asia/Kolkata')))
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=30, tzinfo=pytz.timezone('Asia/Kolkata')))
     app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=pytz.timezone('Asia/Kolkata')))
-    print("✅ Version 16.0 (Final Fix) Started!")
+    print("✅ Version 17.0 (Menu-Only Edition) Started!")
 
 if __name__ == "__main__":
     keep_alive()
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
-    # Commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("add_group", add_group))
     app.add_handler(CommandHandler("reset_all", reset_all_cmd))
     app.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_result))
 
-    # --- CONVERSATIONS ---
+    # --- ALL BUTTON FLOWS ---
     
     # 1. Schedule Test
     conv_schedule = ConversationHandler(
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     )
     app.add_handler(conv_schedule)
 
-    # 2. Custom Time (NEW)
+    # 2. Set Time
     conv_time = ConversationHandler(
         entry_points=[CallbackQueryHandler(start_custom_time, pattern='^time_flow$')],
         states={ASK_CUSTOM_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_custom_time)]},
@@ -92,6 +92,14 @@ if __name__ == "__main__":
         fallbacks=[CommandHandler("cancel", cancel)]
     )
     app.add_handler(conv_admin)
+
+    # 5. Set Topper (Manual)
+    conv_topper = ConversationHandler(
+        entry_points=[CallbackQueryHandler(start_set_topper, pattern='^topper_flow$')],
+        states={ASK_TOPPER_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_topper_name)]},
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
+    app.add_handler(conv_topper)
 
     # General Buttons
     app.add_handler(CallbackQueryHandler(button_handler, pattern='^menu_|status_|reset_|back_|fire_'))
