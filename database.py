@@ -4,10 +4,10 @@ from config import DB_FILE, OWNER_ID
 
 DEFAULT_DATA = {
     "groups": [],
-    "schedule": {},   # Format: {"01-01-2026": {"day": "Physics", "link": "..."}}
+    "schedule": {},   
     "users": {},      
-    "auth_users": [], 
-    "settings": {"time": "16:00"},
+    "auth_users": [], # Admin List
+    "settings": {"time": "18:00"},
     "daily_stats": {"topper": "Pending..."}
 }
 
@@ -18,9 +18,8 @@ def load_data():
     try:
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            # Ensure keys exist
             if "schedule" not in data: data["schedule"] = {}
-            if "users" not in data: data["users"] = {}
+            if "auth_users" not in data: data["auth_users"] = []
             return data
     except:
         return DEFAULT_DATA
@@ -31,6 +30,7 @@ def save_data(data):
 
 def is_admin(user_id):
     data = load_data()
+    # Owner ya Auth User ho to True
     return user_id == OWNER_ID or user_id in data.get("auth_users", [])
 
 def update_time(new_time):
@@ -53,5 +53,4 @@ def set_daily_topper(name):
     save_data(data)
 
 def reset_bot_data():
-    """Factory Reset"""
     save_data(DEFAULT_DATA)
