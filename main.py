@@ -17,8 +17,10 @@ from config import BOT_TOKEN
 from database import load_data
 from handlers import (
     start, add_group, reset_all_cmd, button_handler, mark_attendance,
-    start_add_link, receive_date, receive_topic, receive_link, cancel, set_topper_cmd, add_user_cmd, broadcast_cmd,
-    show_leaderboard, show_profile, handle_forwarded_result, ASK_DATE, ASK_TOPIC, ASK_LINK
+    start_add_link, receive_date, receive_topic, receive_link, cancel, 
+    start_broadcast, send_broadcast, start_add_admin, receive_admin_id,
+    show_leaderboard, show_profile, handle_forwarded_result, 
+    ASK_DATE, ASK_TOPIC, ASK_LINK, ASK_BROADCAST_MSG, ASK_ADMIN_ID
 )
 from jobs import job_send_test, job_nightly_report, job_morning_motivation
 
@@ -31,13 +33,7 @@ def keep_alive(): t = Thread(target=run_http); t.start()
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 async def post_init(app):
-    await app.bot.set_my_commands([
-        ("start", "Main Menu"),
-        ("add_test", "Schedule"),
-        ("broadcast", "Announcement"),
-        ("profile", "My Report"),
-        ("leaderboard", "Top Students")
-    ])
+    await app.bot.set_my_commands([("start", "Open Menu Panel")])
     
     db = load_data()
     t_str = db["settings"].get("time", "18:00")
@@ -47,7 +43,7 @@ async def post_init(app):
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=30, tzinfo=pytz.timezone('Asia/Kolkata')))
     app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=pytz.timezone('Asia/Kolkata')))
     
-    print("✅ Bot Started (v13.0 - Buttons Fixed)")
+    print("✅ Ultra Pro Bot (v14.0 All-Buttons) Started!")
 
 if __name__ == "__main__":
     keep_alive()
@@ -57,22 +53,15 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("add_group", add_group))
     app.add_handler(CommandHandler("reset_all", reset_all_cmd))
-    app.add_handler(CommandHandler("profile", show_profile))
-    app.add_handler(CommandHandler("leaderboard", show_leaderboard))
-    app.add_handler(CommandHandler("set_topper", set_topper_cmd))
-    app.add_handler(CommandHandler("add_user", add_user_cmd))
-    app.add_handler(CommandHandler("broadcast", broadcast_cmd))
 
     # Forward Handler
     app.add_handler(MessageHandler(filters.FORWARDED & filters.TEXT, handle_forwarded_result))
 
-    # Conversation Handler (ADD TEST)
-    # Note: 'add_link_flow' pattern yahan add kiya hai taaki BUTTON kaam kare
-    conv = ConversationHandler(
-        entry_points=[
-            CommandHandler("add_test", start_add_link),
-            CallbackQueryHandler(start_add_link, pattern='^add_link_flow$')
-        ],
+    # --- CONVERSATIONS (ALL BUTTON TRIGGERED) ---
+    
+    # 1. Schedule Test
+    conv_schedule = ConversationHandler(
+        entry_points=[CallbackQueryHandler(start_add_link, pattern='^add_link_flow$')],
         states={
             ASK_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_date)],
             ASK_TOPIC: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_topic)],
@@ -80,10 +69,26 @@ if __name__ == "__main__":
         },
         fallbacks=[CommandHandler("cancel", cancel)]
     )
-    app.add_handler(conv)
+    app.add_handler(conv_schedule)
 
-    # General Button Handler
-    app.add_handler(CallbackQueryHandler(button_handler, pattern='^menu_|time_|status_|show_|my_|reset_|help_|back_'))
+    # 2. Broadcast
+    conv_broadcast = ConversationHandler(
+        entry_points=[CallbackQueryHandler(start_broadcast, pattern='^broadcast_flow$')],
+        states={ASK_BROADCAST_MSG: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_broadcast)]},
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
+    app.add_handler(conv_broadcast)
+
+    # 3. Add Admin
+    conv_admin = ConversationHandler(
+        entry_points=[CallbackQueryHandler(start_add_admin, pattern='^add_admin_flow$')],
+        states={ASK_ADMIN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_admin_id)]},
+        fallbacks=[CommandHandler("cancel", cancel)]
+    )
+    app.add_handler(conv_admin)
+
+    # General Buttons
+    app.add_handler(CallbackQueryHandler(button_handler, pattern='^menu_|time_|status_|show_|my_|reset_|back_|fire_'))
     app.add_handler(CallbackQueryHandler(mark_attendance, pattern='attendance_done'))
 
     app.run_polling()
