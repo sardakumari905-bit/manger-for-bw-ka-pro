@@ -1,5 +1,7 @@
+# config.py
 # --- CONFIGURATION ---
-BOT_TOKEN = "8548905075:AAEgZBvmGvwIbAHgH0LkW1q_IG7nIQTrh-Y" 
+BOT_TOKEN = "7846479006:AAH-MnFhQLC2K8A0Zo-fZFG-OnHA0V_iATw" 
 OWNER_ID = 6761345074 
+MAIN_GROUP_ID = -1003308402459  # <--- HARDCODED GROUP ID
 DB_FILE = "rbse_final_db.json"
-START_IMG = "[url=https://ibb.co/fdgTFrhc][img]https://i.ibb.co/fdgTFrhc/Screenshot-2025-12-30-125804.png"
+START_IMG = "https://i.postimg.cc/rmDPsqRC/Gemini-Generated-Image-5jbjnc5jbjnc5jbj.png"
