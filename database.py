@@ -1,15 +1,13 @@
-# database.py
 import json
 import os
 import shutil
 from config import DB_FILE, OWNER_ID, MAIN_GROUP_ID
 
 DEFAULT_DATA = {
-    "groups": [MAIN_GROUP_ID], # Default group pehle se added
-    "schedule": {},    
+    "groups": [MAIN_GROUP_ID],
+    "schedule": {}, # Now stores Lists: "Date": [{test1}, {test2}]
     "users": {},       
     "auth_users": [], 
-    "settings": {"time": "16:00"},
     "daily_stats": {"topper": "Pending..."}
 }
 
@@ -20,26 +18,14 @@ def load_data():
     try:
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            # Integrity Checks (Data structure fix karne ke liye)
-            if "schedule" not in data: data["schedule"] = {}
-            if "users" not in data: data["users"] = {}
-            if "auth_users" not in data: data["auth_users"] = []
-            if "groups" not in data: data["groups"] = []
-            if "daily_stats" not in data: data["daily_stats"] = {"topper": "Pending..."}
-            
-            # Auto-Add Main Group if missing
-            if MAIN_GROUP_ID not in data["groups"]:
-                data["groups"].append(MAIN_GROUP_ID)
-                save_data(data) # Turant save karein
-                
+            if MAIN_GROUP_ID not in data.get("groups", []):
+                data.setdefault("groups", []).append(MAIN_GROUP_ID)
+                save_data(data)
             return data
-    except Exception as e:
-        print(f"❌ Database Error: {e}")
+    except:
         return DEFAULT_DATA
 
 def save_data(data):
-    # ATOMIC SAVE: Pehle temp file me likho, fir rename karo.
-    # Isse file kabhi corrupt (0 bytes) nahi hogi.
     temp_file = f"{DB_FILE}.tmp"
     try:
         with open(temp_file, 'w') as f:
@@ -52,19 +38,26 @@ def is_admin(user_id):
     data = load_data()
     return user_id == OWNER_ID or user_id in data.get("auth_users", [])
 
-def update_time(new_time):
+# --- NEW: Add Test with Time ---
+def add_test_to_schedule(date_str, topic, link, time_str):
     data = load_data()
-    data["settings"]["time"] = new_time
+    if date_str not in data["schedule"]:
+        data["schedule"][date_str] = []
+    
+    # Check duplicate prevention
+    new_test = {"day": topic, "link": link, "time": time_str, "sent": False}
+    data["schedule"][date_str].append(new_test)
     save_data(data)
 
-def add_test_to_schedule(date_str, topic, link):
+def get_tests_by_date(date_str):
     data = load_data()
-    data["schedule"][date_str] = {"day": topic, "link": link}
-    save_data(data)
+    return data["schedule"].get(date_str, [])
 
-def get_test_by_date(date_str):
+def mark_test_sent(date_str, index):
     data = load_data()
-    return data["schedule"].get(date_str, None)
+    if date_str in data["schedule"] and len(data["schedule"][date_str]) > index:
+        data["schedule"][date_str][index]["sent"] = True
+        save_data(data)
 
 def set_daily_topper(name):
     data = load_data()
@@ -72,6 +65,4 @@ def set_daily_topper(name):
     save_data(data)
 
 def reset_bot_data():
-    # Reset karte waqt bhi main group ko mat hatana
-    reset_d = DEFAULT_DATA.copy()
-    save_data(reset_d)
+    save_data(DEFAULT_DATA)
