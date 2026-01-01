@@ -6,19 +6,20 @@ from datetime import datetime, time
 import pytz
 from jobs import job_send_test, execute_test_logic
 
-# --- STATES (Saare Features ke liye) ---
+# --- STATES ---
 ASK_DATE, ASK_TOPIC, ASK_LINK = range(3)
 ASK_BROADCAST_MSG = 3
 ASK_ADMIN_ID = 4
 ASK_CUSTOM_TIME = 5
-ASK_TOPPER_NAME = 6  # <--- New for Button Flow
+ASK_TOPPER_NAME = 6
 
 # --- MAIN MENU (Admin vs Student) ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    # Ensure user in DB
     db = load_data()
     uid = str(user.id)
+    
+    # User ko DB mein add karna agar wo naya hai
     if uid not in db["users"]:
         db["users"][uid] = {"name": user.first_name, "strikes": 0, "last_date": "", "total_attendance": 0}
         save_data(db)
@@ -28,13 +29,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [
             [InlineKeyboardButton("➕ Schedule Test", callback_data='add_link_flow'),
              InlineKeyboardButton("🚀 Quick Fire", callback_data='menu_quick_start')],
-            
             [InlineKeyboardButton("📢 Broadcast", callback_data='broadcast_flow'),
              InlineKeyboardButton("🏆 Set Topper", callback_data='topper_flow')],
-            
             [InlineKeyboardButton("⏰ Set Time", callback_data='time_flow'),
              InlineKeyboardButton("👮 Add Admin", callback_data='add_admin_flow')],
-            
             [InlineKeyboardButton("📊 Status", callback_data='status_check'),
              InlineKeyboardButton("🗑️ RESET BOT", callback_data='reset_flow')]
         ]
@@ -62,7 +60,9 @@ async def receive_date(u, c):
         c.user_data['date'] = u.message.text
         await u.message.reply_text("📝 **Topic/Subject Name?**")
         return ASK_TOPIC
-    except: await u.message.reply_text("❌ Galat Format! Aise likhein: `01-01-2026`"); return ASK_DATE
+    except: 
+        await u.message.reply_text("❌ Galat Format! Aise likhein: `01-01-2026`")
+        return ASK_DATE
 
 async def receive_topic(u, c):
     c.user_data['topic'] = u.message.text
@@ -74,7 +74,7 @@ async def receive_link(u, c):
     await u.message.reply_text(f"✅ **Test Scheduled!**\n📅 {c.user_data['date']}\n📝 {c.user_data['topic']}")
     return ConversationHandler.END
 
-# --- 2. SET TOPPER FLOW (NEW BUTTON) ---
+# --- 2. SET TOPPER FLOW (MANUAL) ---
 async def start_set_topper(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query; await q.answer()
     await q.message.reply_text("🏆 **Topper ka Naam likhein:**")
@@ -106,26 +106,43 @@ async def receive_custom_time(u, c):
 
 # --- 4. BROADCAST FLOW ---
 async def start_broadcast_btn(u, c):
-    q = u.callback_query; await q.answer(); await q.message.reply_text("📢 **Message Likhein (Sabko jayega):**"); return ASK_BROADCAST_MSG
+    q = u.callback_query; await q.answer()
+    await q.message.reply_text("📢 **Message Likhein (Sabko jayega):**")
+    return ASK_BROADCAST_MSG
+
 async def send_broadcast_btn(u, c):
-    msg = u.message.text; db = load_data(); count=0
+    msg = u.message.text
+    db = load_data()
+    count = 0
     for gid in db["groups"]:
-        try: await c.bot.send_message(gid, f"📢 **ANNOUNCEMENT:**\n\n{msg}"); count+=1
+        try:
+            await c.bot.send_message(gid, f"📢 **ANNOUNCEMENT:**\n\n{msg}")
+            count += 1
         except: pass
-    await u.message.reply_text(f"✅ Sent to {count} groups."); return ConversationHandler.END
+    await u.message.reply_text(f"✅ Sent to {count} groups.")
+    return ConversationHandler.END
 
 # --- 5. ADD ADMIN FLOW ---
 async def start_add_admin_btn(u, c):
-    q = u.callback_query; await q.answer(); await q.message.reply_text("👮 **New Admin ki ID bhejein:**"); return ASK_ADMIN_ID
+    q = u.callback_query; await q.answer()
+    await q.message.reply_text("👮 **New Admin ki ID bhejein:**")
+    return ASK_ADMIN_ID
+
 async def receive_admin_id_btn(u, c):
     try:
-        nid = int(u.message.text); db = load_data()
-        if nid not in db["auth_users"]: db["auth_users"].append(nid); save_data(db)
+        nid = int(u.message.text)
+        db = load_data()
+        if nid not in db["auth_users"]:
+            db["auth_users"].append(nid)
+            save_data(db)
         await u.message.reply_text(f"✅ Admin Added: {nid}")
-    except: await u.message.reply_text("❌ Invalid ID (Number only)")
+    except:
+        await u.message.reply_text("❌ Invalid ID (Numbers only)")
     return ConversationHandler.END
 
-async def cancel(u, c): await u.message.reply_text("❌ Cancelled"); return ConversationHandler.END
+async def cancel(u, c):
+    await u.message.reply_text("❌ Cancelled")
+    return ConversationHandler.END
 
 # --- GENERAL BUTTON HANDLER ---
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -133,82 +150,134 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     data = query.data
     
-    if data == 'back_home': await start(query, context)
+    if data == 'back_home':
+        await start(query, context)
     
-    # Quick Start
     elif data == 'menu_quick_start':
-        db = load_data(); sch = db.get("schedule", {})
-        if not sch: await query.message.reply_text("⚠️ Schedule Empty! Pehle Test add karein.")
+        db = load_data()
+        sch = db.get("schedule", {})
+        if not sch:
+            await query.message.reply_text("⚠️ Schedule Empty! Pehle Test add karein.")
         else:
             btns = [[InlineKeyboardButton(f"🚀 Fire: {d['day']}", callback_data=f"fire_{k}")] for k,d in sch.items()]
             btns.append([InlineKeyboardButton("🔙 Back", callback_data='back_home')])
             await query.message.edit_caption("👇 **Select Test to Start NOW:**", reply_markup=InlineKeyboardMarkup(btns))
             
     elif data.startswith('fire_'):
-        dt = data.split("_")[1]; db = load_data(); t=db["schedule"].get(dt)
+        dt = data.split("_")[1]
+        db = load_data()
+        t = db["schedule"].get(dt)
         if t: 
             await query.message.reply_text(f"🚀 **Launching {t['day']}!**")
-            for gid in db["groups"]: context.application.create_task(execute_test_logic(context, gid, t))
+            for gid in db["groups"]:
+                context.application.create_task(execute_test_logic(context, gid, t))
     
-    # Reset
-    elif data == 'reset_flow': await query.message.reply_text("⚠️ **DANGER:** Sab delete ho jayega.\nType `/reset_all` to confirm.")
+    elif data == 'reset_flow':
+        await query.message.reply_text("⚠️ **DANGER:** Sab delete ho jayega.\nType `/reset_all` to confirm.")
     
-    # Status
     elif data == 'status_check': 
-        db=load_data()
+        db = load_data()
         txt = f"📊 **SYSTEM STATUS**\nConnected Groups: {len(db['groups'])}\nScheduled Tests: {len(db['schedule'])}\nTotal Students: {len(db['users'])}"
         await query.message.reply_text(txt)
 
 # --- STUDENT HELPERS ---
 async def show_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query; await query.answer()
-    db = load_data(); uid = str(query.from_user.id)
+    query = update.callback_query
+    await query.answer()
+    db = load_data()
+    uid = str(query.from_user.id)
     u = db["users"].get(uid, {"name": query.from_user.first_name, "total_attendance": 0, "strikes": 0})
     txt = f"👤 **PROFILE:** {u.get('name')}\n📊 Attendance: {u.get('total_attendance',0)}\n⚠️ Strikes: {u.get('strikes',0)}/3"
     await query.message.reply_text(txt)
 
 async def show_leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query; await query.answer()
+    query = update.callback_query
+    await query.answer()
     db = load_data()
-    r = [(d.get('name', 'Unknown'), d.get('total_attendance',0)) for i,d in db['users'].items() if int(i)!=OWNER_ID]
+    # Owner aur Admins ko leaderboard se bahar rakha hai
+    r = [(d.get('name', 'Unknown'), d.get('total_attendance',0)) for i,d in db['users'].items() if int(i) != OWNER_ID and int(i) not in db.get("auth_users", [])]
     r.sort(key=lambda x:x[1], reverse=True)
-    if not r: await query.message.reply_text("📭 Leaderboard Empty.")
+    if not r:
+        await query.message.reply_text("📭 Leaderboard Empty.")
     else:
         txt = "🏆 **TOP STUDENTS**\n" + "\n".join([f"{i+1}. {n} ({s})" for i,(n,s) in enumerate(r[:10])])
         await query.message.reply_text(txt)
 
 # --- ATTENDANCE & AUTO ACTIONS ---
 async def mark_attendance(u, c):
-    uid=str(u.callback_query.from_user.id); today=str(datetime.now().date()); db=load_data()
-    if uid not in db['users']: db['users'][uid]={'name':u.callback_query.from_user.first_name,'strikes':0,'last_date':'','total_attendance':0}
-    if db['users'][uid]['last_date']!=today: 
-        db['users'][uid]['last_date']=today; db['users'][uid]['total_attendance']+=1; save_data(db)
-        await u.callback_query.answer("✅ Attendance Marked!", show_alert=True)
-    else: await u.callback_query.answer("Already Present! ✅", show_alert=True)
+    query = u.callback_query
+    uid = str(query.from_user.id)
+    today = str(datetime.now().date())
+    db = load_data()
+    
+    if uid not in db['users']:
+        db['users'][uid] = {'name': query.from_user.first_name, 'strikes': 0, 'last_date': '', 'total_attendance': 0}
+    
+    if db['users'][uid]['last_date'] != today: 
+        db['users'][uid]['last_date'] = today
+        db['users'][uid]['total_attendance'] += 1
+        save_data(db)
+        await query.answer("✅ Attendance Marked!", show_alert=True)
+    else:
+        await query.answer("Already Present! ✅", show_alert=True)
 
 async def add_group(u, c):
-    if u.effective_chat.type!="private": db=load_data(); db["groups"].append(u.effective_chat.id) if u.effective_chat.id not in db["groups"] else None; save_data(db); await u.message.reply_text("✅ Group Connected!")
+    if u.effective_chat.type != "private":
+        db = load_data()
+        if u.effective_chat.id not in db["groups"]:
+            db["groups"].append(u.effective_chat.id)
+            save_data(db)
+        await u.message.reply_text("✅ Group Connected!")
 
 async def reset_all_cmd(u, c): 
-    if u.effective_user.id==OWNER_ID: reset_bot_data(); await u.message.reply_text("☢️ **SYSTEM RESET SUCCESSFUL**")
+    if u.effective_user.id == OWNER_ID:
+        reset_bot_data()
+        await u.message.reply_text("☢️ **SYSTEM RESET SUCCESSFUL**")
 
+# --- ULTRA AUTO TOPPER & AUTO ATTENDANCE ---
 async def handle_forwarded_result(u, c):
     if not is_admin(u.effective_user.id): return
+    
     text = u.message.text or u.message.caption or ""
-    if "🏆" in text or "Quiz" in text:
-        db=load_data(); today=str(datetime.now().date()); lines=text.split('\n'); detected=[]; topper="Unknown"; count=0
+    
+    # Check if it's a Quiz result
+    if any(keyword in text for keyword in ["🏆", "Quiz", "Results", "🥇"]):
+        db = load_data()
+        today = str(datetime.now().date())
+        lines = text.split('\n')
+        detected_names = []
+        topper = "Unknown"
+        count = 0
+        
         for line in lines:
-            if "🥇" in line or "1." in line or (len(line)>0 and line[0].isdigit() and "." in line):
+            # Rank/Position markers check karein (1. Rahul, 2. Aman etc.)
+            if any(marker in line for marker in ["🥇", "1.", "2.", "3.", "4.", "5.", "6.", "7.", "8.", "9.", "10."]):
                 try:
-                    clean = line.replace("🥇","").split("-")[0].strip()
-                    if "." in clean: clean=clean.split(".",1)[1].strip()
-                    if clean: detected.append(clean); 
-                    if topper=="Unknown": topper=clean
+                    # Line cleaning logic
+                    clean = line.split('.', 1)[1] if '.' in line else line
+                    # Name ke aage se score aur emojis hatana
+                    clean = clean.split('-')[0].split('(')[0].replace("🥇","").strip()
+                    
+                    if clean:
+                        detected_names.append(clean.lower())
+                        if topper == "Unknown": topper = clean
                 except: pass
-        if topper!="Unknown": set_daily_topper(topper)
-        if detected:
+
+        # 1. Update Topper
+        if topper != "Unknown":
+            set_daily_topper(topper)
+        
+        # 2. Update Attendance for all detected names
+        if detected_names:
             for uid, user in db["users"].items():
-                if user.get("name") in detected and user["last_date"]!=today:
-                    user["last_date"]=today; user["total_attendance"]+=1; count+=1
+                db_name = user.get("name", "").lower().strip()
+                # Agar student ka naam result mein hai aur aaj ki attendance nahi lagi hai
+                if db_name in detected_names and user["last_date"] != today:
+                    user["last_date"] = today
+                    user["total_attendance"] += 1
+                    count += 1
+            
             save_data(db)
-            await u.message.reply_text(f"✅ **Auto-Topper:** {topper}\n💾 **Auto-Attendance:** {count} Saved")
+            await u.message.reply_text(f"🏆 **Daily Topper:** {topper}\n✅ **Auto-Attendance:** {count} Students Saved!")
+        else:
+            await u.message.reply_text("❌ Result format samajh nahi aaya ya koi naam match nahi hua.")
