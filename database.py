@@ -2,7 +2,7 @@ import json
 import os
 from config import DB_FILE, OWNER_ID
 
-# आपकी ID यहाँ जोड़ दी गई है
+# आपकी Group ID यहाँ डिफ़ॉल्ट में डाल दी है
 DEFAULT_DATA = {
     "groups": [-1002308402459], 
     "schedule": {},   
@@ -19,8 +19,9 @@ def load_data():
     try:
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            # पक्का करना कि आपकी ग्रुप ID हमेशा रहे
-            if "groups" not in data: data["groups"] = [-1002308402459]
+            # यह पक्का करता है कि आपकी ID हमेशा लिस्ट में रहे
+            if "groups" not in data: 
+                data["groups"] = [-1002308402459]
             elif -1002308402459 not in data["groups"]:
                 data["groups"].append(-1002308402459)
             return data
