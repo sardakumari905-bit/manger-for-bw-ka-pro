@@ -2,12 +2,13 @@ import json
 import os
 from config import DB_FILE, OWNER_ID
 
+# आपकी ID यहाँ जोड़ दी गई है
 DEFAULT_DATA = {
-    "groups": [],
+    "groups": [-1002308402459], 
     "schedule": {},   
     "users": {},      
-    "auth_users": [], 
-    "settings": {"time": "16:00"}, # 4 PM Default
+    "auth_users": [],  
+    "settings": {"time": "16:00"},
     "daily_stats": {"topper": "Pending..."}
 }
 
@@ -18,9 +19,10 @@ def load_data():
     try:
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            if "schedule" not in data: data["schedule"] = {}
-            if "users" not in data: data["users"] = {}
-            if "auth_users" not in data: data["auth_users"] = []
+            # पक्का करना कि आपकी ग्रुप ID हमेशा रहे
+            if "groups" not in data: data["groups"] = [-1002308402459]
+            elif -1002308402459 not in data["groups"]:
+                data["groups"].append(-1002308402459)
             return data
     except:
         return DEFAULT_DATA
