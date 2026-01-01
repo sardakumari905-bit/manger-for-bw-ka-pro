@@ -1,13 +1,14 @@
+# database.py
 import json
 import os
-from config import DB_FILE, OWNER_ID
+import shutil
+from config import DB_FILE, OWNER_ID, MAIN_GROUP_ID
 
-# आपकी Group ID यहाँ डिफ़ॉल्ट में डाल दी है
 DEFAULT_DATA = {
-    "groups": [-1002308402459], 
-    "schedule": {},   
-    "users": {},      
-    "auth_users": [],  
+    "groups": [MAIN_GROUP_ID], # Default group pehle se added
+    "schedule": {},    
+    "users": {},       
+    "auth_users": [], 
     "settings": {"time": "16:00"},
     "daily_stats": {"topper": "Pending..."}
 }
@@ -19,18 +20,33 @@ def load_data():
     try:
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            # यह पक्का करता है कि आपकी ID हमेशा लिस्ट में रहे
-            if "groups" not in data: 
-                data["groups"] = [-1002308402459]
-            elif -1002308402459 not in data["groups"]:
-                data["groups"].append(-1002308402459)
+            # Integrity Checks (Data structure fix karne ke liye)
+            if "schedule" not in data: data["schedule"] = {}
+            if "users" not in data: data["users"] = {}
+            if "auth_users" not in data: data["auth_users"] = []
+            if "groups" not in data: data["groups"] = []
+            if "daily_stats" not in data: data["daily_stats"] = {"topper": "Pending..."}
+            
+            # Auto-Add Main Group if missing
+            if MAIN_GROUP_ID not in data["groups"]:
+                data["groups"].append(MAIN_GROUP_ID)
+                save_data(data) # Turant save karein
+                
             return data
-    except:
+    except Exception as e:
+        print(f"❌ Database Error: {e}")
         return DEFAULT_DATA
 
 def save_data(data):
-    with open(DB_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
+    # ATOMIC SAVE: Pehle temp file me likho, fir rename karo.
+    # Isse file kabhi corrupt (0 bytes) nahi hogi.
+    temp_file = f"{DB_FILE}.tmp"
+    try:
+        with open(temp_file, 'w') as f:
+            json.dump(data, f, indent=4)
+        shutil.move(temp_file, DB_FILE)
+    except Exception as e:
+        print(f"⚠️ Save Error: {e}")
 
 def is_admin(user_id):
     data = load_data()
@@ -56,4 +72,6 @@ def set_daily_topper(name):
     save_data(data)
 
 def reset_bot_data():
-    save_data(DEFAULT_DATA)
+    # Reset karte waqt bhi main group ko mat hatana
+    reset_d = DEFAULT_DATA.copy()
+    save_data(reset_d)
