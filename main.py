@@ -8,12 +8,13 @@ from telegram.ext import (
 import nest_asyncio
 nest_asyncio.apply()
 
-# --- LOCAL IMPORTS (Ye alag-alag line me hone chahiye) ---
+# --- LOCAL IMPORTS (Ye Dekho: Ab ye alag-alag lines me hain) ---
 from config import *
-from handlers import * from jobs import job_check_schedule, job_nightly_report, job_morning_motivation
+from handlers import * 
+from jobs import job_check_schedule, job_nightly_report, job_morning_motivation
 from datetime import time
 
-# --- FLASK SERVER (Bot ko 24/7 chalane ke liye) ---
+# --- FLASK SERVER ---
 app_web = Flask('')
 
 @app_web.route('/')
@@ -32,22 +33,21 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=lo
 
 # --- JOB QUEUE SETUP ---
 async def post_init(app):
-    # 1. Schedule Check (Har 60 second me check karega)
+    # 1. Schedule Check
     app.job_queue.run_repeating(job_check_schedule, interval=60, first=10)
     
-    # 2. Night Report (Raat 9:00 baje)
+    # 2. Night Report (9:00 PM IST)
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=0, tzinfo=IST)) 
     
-    # 3. Morning Motivation (Subah 5:00 baje)
+    # 3. Morning Motivation (5:00 AM IST)
     app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=IST))
     
     print("✅ System Online: Jobs & Schedule Loaded!")
 
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
-    keep_alive() # Server start
+    keep_alive()
     
-    # Bot Builder
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
     # 1. Commands
@@ -55,10 +55,10 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("add_group", add_group))
     app.add_handler(CommandHandler("reset_all", reset_all_cmd))
 
-    # 2. Auto Attendance (Forward Message Listener)
+    # 2. Auto Attendance
     app.add_handler(MessageHandler(filters.FORWARDED, handle_forwarded_result))
 
-    # 3. Conversation: Schedule Test
+    # 3. Schedule Test Flow
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_add_link, pattern='^add_link_flow$')],
         states={
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         }, fallbacks=[CommandHandler("cancel", cancel)]
     ))
 
-    # 4. Conversation: Set Topper (Subject Wise)
+    # 4. Set Topper Flow
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_set_topper, pattern='^topper_flow$')],
         states={
@@ -78,21 +78,21 @@ if __name__ == "__main__":
         }, fallbacks=[CommandHandler("cancel", cancel)]
     ))
     
-    # 5. Conversation: Add Admin
+    # 5. Add Admin Flow
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_add_admin_btn, pattern='^add_admin_flow$')],
         states={ASK_ADMIN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_admin_id_btn)]},
         fallbacks=[CommandHandler("cancel", cancel)]
     ))
     
-    # 6. Conversation: Broadcast
+    # 6. Broadcast Flow
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_broadcast_btn, pattern='^broadcast_flow$')],
         states={ASK_BROADCAST_MSG: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_broadcast_btn)]},
         fallbacks=[CommandHandler("cancel", cancel)]
     ))
     
-    # 7. Button Handler (Sabse last me hona chahiye)
+    # 7. Button Handler
     app.add_handler(CallbackQueryHandler(button_handler))
 
     print("🚀 Board Pro Bot is STARTING...")
