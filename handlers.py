@@ -22,14 +22,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
              InlineKeyboardButton("🏆 Set Topper", callback_data='topper_flow')],
             [InlineKeyboardButton("🚀 Launch Now", callback_data='menu_quick_start'),
              InlineKeyboardButton("📢 Broadcast", callback_data='broadcast_flow')],
-            [InlineKeyboardButton("📊 Status", callback_data='status_check'),
-             InlineKeyboardButton("🗑️ RESET", callback_data='reset_flow')]
+            [InlineKeyboardButton("👮 Add Admin", callback_data='add_admin_flow'), # ✅ Added Back
+             InlineKeyboardButton("📊 Status", callback_data='status_check')],
+            [InlineKeyboardButton("🗑️ RESET BOT", callback_data='reset_flow')]
         ]
     else:
         # Student Menu showing Today's Toppers
         today = datetime.now(IST).strftime("%d-%m-%Y")
         toppers = get_todays_toppers(today)
-        t_text = "\n".join([f"{s}: {n}" for s,n in toppers.items()]) if toppers else "Result Coming Soon..."
+        t_text = "\n".join([f"• {s}: {n}" for s,n in toppers.items()]) if toppers else "Result Coming Soon..."
         
         caption = f"🤖 **Student Panel**\n\n🏆 **TODAY'S TOPPERS:**\n{t_text}"
         keyboard = [[InlineKeyboardButton("👤 My Profile", callback_data='my_profile')]]
@@ -72,6 +73,24 @@ async def receive_topper_name(u, c):
     today = datetime.now(IST).strftime("%d-%m-%Y")
     set_subject_topper(today, c.user_data['top_sub'], u.message.text)
     await u.message.reply_text(f"✅ Saved!\n📅 {today}\n📚 {c.user_data['top_sub']}: {u.message.text}")
+    return ConversationHandler.END
+
+# --- ADD ADMIN FLOW ---
+async def start_add_admin_btn(u, c):
+    if u.callback_query: await u.callback_query.answer()
+    await u.effective_message.reply_text("👮 **New Admin ki Telegram ID (Number) bhejein:**")
+    return ASK_ADMIN_ID
+
+async def receive_admin_id_btn(u, c):
+    try:
+        nid = int(u.message.text)
+        db = load_data()
+        if nid not in db["auth_users"]: 
+            db["auth_users"].append(nid)
+            save_data(db)
+        await u.message.reply_text("✅ New Admin Added.")
+    except: 
+        await u.message.reply_text("❌ Sirf Number bhejein (UID).")
     return ConversationHandler.END
 
 # --- SCHEDULE FLOW ---
