@@ -9,12 +9,12 @@ from telegram.ext import (
 import nest_asyncio
 nest_asyncio.apply()
 
-# Local Imports (Fix: Separate lines)
+# --- LOCAL IMPORTS (FIXED HERE) ---
 from config import *
 from handlers import * from jobs import job_check_schedule, job_nightly_report, job_morning_motivation
 from datetime import time
 
-# Flask Keep-Alive
+# --- FLASK SERVER (Keep Alive) ---
 app_web = Flask('')
 @app_web.route('/')
 def home(): return "Board Pro Bot Running 🟢"
@@ -24,59 +24,69 @@ def keep_alive(): t = Thread(target=run_http); t.start()
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 async def post_init(app):
-    # Jobs (Timers)
+    # 1. Schedule Check (Every 60s)
     app.job_queue.run_repeating(job_check_schedule, interval=60, first=10)
-    app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=00, tzinfo=IST)) 
+    
+    # 2. Night Report (9:00 PM IST)
+    # Note: IST timezone config.py se aa raha hai
+    app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=0, tzinfo=IST)) 
+    
+    # 3. Morning Motivation (5:00 AM IST)
     app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=IST))
-    print("✅ System Online & Jobs Scheduled!")
+    
+    print("✅ System Online: Jobs & Schedule Loaded!")
 
 if __name__ == "__main__":
     keep_alive()
+    
+    # Build Application
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
-    # Commands
+    # --- COMMAND HANDLERS ---
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("add_group", add_group))
     app.add_handler(CommandHandler("reset_all", reset_all_cmd))
 
-    # Listen for Forwarded Results (Auto Attendance)
+    # --- MESSAGE HANDLERS ---
+    # Auto Attendance via Forwarded Messages
     app.add_handler(MessageHandler(filters.FORWARDED, handle_forwarded_result))
 
-    # Conversation: Schedule Test
+    # --- CONVERSATION: SCHEDULE TEST ---
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_add_link, pattern='^add_link_flow$')],
         states={
-            ASK_DATE: [MessageHandler(filters.TEXT, receive_date)],
-            ASK_TOPIC: [MessageHandler(filters.TEXT, receive_topic)],
-            ASK_LINK: [MessageHandler(filters.TEXT, receive_link)],
-            ASK_TIME_SLOT: [MessageHandler(filters.TEXT, receive_time_slot)],
+            ASK_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_date)],
+            ASK_TOPIC: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_topic)],
+            ASK_LINK: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_link)],
+            ASK_TIME_SLOT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_time_slot)],
         }, fallbacks=[CommandHandler("cancel", cancel)]
     ))
 
-    # Conversation: Set Topper (Subject Wise)
+    # --- CONVERSATION: SET TOPPER (Subject Wise) ---
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_set_topper, pattern='^topper_flow$')],
         states={
-            ASK_TOPPER_SUBJECT: [MessageHandler(filters.TEXT, receive_topper_subject)],
-            ASK_TOPPER_NAME: [MessageHandler(filters.TEXT, receive_topper_name)],
+            ASK_TOPPER_SUBJECT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_topper_subject)],
+            ASK_TOPPER_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_topper_name)],
         }, fallbacks=[CommandHandler("cancel", cancel)]
     ))
     
-    # Conversation: Add Admin (Fixed & Added Back)
+    # --- CONVERSATION: ADD ADMIN ---
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_add_admin_btn, pattern='^add_admin_flow$')],
-        states={ASK_ADMIN_ID: [MessageHandler(filters.TEXT, receive_admin_id_btn)]},
+        states={ASK_ADMIN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_admin_id_btn)]},
         fallbacks=[CommandHandler("cancel", cancel)]
     ))
     
-    # Conversation: Broadcast
+    # --- CONVERSATION: BROADCAST ---
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_broadcast_btn, pattern='^broadcast_flow$')],
-        states={ASK_BROADCAST_MSG: [MessageHandler(filters.TEXT, send_broadcast_btn)]},
+        states={ASK_BROADCAST_MSG: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_broadcast_btn)]},
         fallbacks=[CommandHandler("cancel", cancel)]
     ))
     
+    # --- BUTTON HANDLER (Must be last) ---
     app.add_handler(CallbackQueryHandler(button_handler))
 
-    print("🚀 Pro Bot Starting...")
+    print("🚀 Board Pro Bot is STARTING...")
     app.run_polling()
