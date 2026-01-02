@@ -1,3 +1,4 @@
+# main.py
 import logging
 from threading import Thread
 from flask import Flask
@@ -8,36 +9,42 @@ from telegram.ext import (
 import nest_asyncio
 nest_asyncio.apply()
 
-# Import from other files
-from config import BOT_TOKEN, ASK_DATE, ASK_TOPIC, ASK_LINK, ASK_TIME_SLOT, IST
-from handlers import * # Import all handlers
-from jobs import job_check_schedule, job_nightly_report, job_morning_motivation
+# Local Imports
+from config import *
+from handlers import * from jobs import job_check_schedule, job_nightly_report, job_morning_motivation
 from datetime import time
 
-# Flask Server
+# Flask Keep-Alive
 app_web = Flask('')
 @app_web.route('/')
-def home(): return "Bot Running 🟢"
+def home(): return "Board Pro Bot Running 🟢"
 def run_http(): app_web.run(host='0.0.0.0', port=8080)
 def keep_alive(): t = Thread(target=run_http); t.start()
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 async def post_init(app):
-    # Jobs Registration
+    # Jobs (Timers)
     app.job_queue.run_repeating(job_check_schedule, interval=60, first=10)
-    app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=30, tzinfo=IST))
+    # Night Report at 9:00 PM
+    app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=00, tzinfo=IST)) 
+    # Morning Motivation at 5:00 AM
     app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=IST))
-    print("✅ System Online!")
+    print("✅ System Online & Jobs Scheduled!")
 
 if __name__ == "__main__":
     keep_alive()
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
-    # Handlers Registration
+    # Commands
     app.add_handler(CommandHandler("start", start))
-    
-    # Schedule Conv
+    app.add_handler(CommandHandler("add_group", add_group))
+    app.add_handler(CommandHandler("reset_all", reset_all_cmd))
+
+    # Listen for Forwarded Results (Auto Attendance)
+    app.add_handler(MessageHandler(filters.FORWARDED, handle_forwarded_result))
+
+    # Conversation: Schedule Test
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_add_link, pattern='^add_link_flow$')],
         states={
@@ -47,7 +54,24 @@ if __name__ == "__main__":
             ASK_TIME_SLOT: [MessageHandler(filters.TEXT, receive_time_slot)],
         }, fallbacks=[CommandHandler("cancel", cancel)]
     ))
+
+    # Conversation: Set Topper (Updated for Subjects)
+    app.add_handler(ConversationHandler(
+        entry_points=[CallbackQueryHandler(start_set_topper, pattern='^topper_flow$')],
+        states={
+            ASK_TOPPER_SUBJECT: [MessageHandler(filters.TEXT, receive_topper_subject)],
+            ASK_TOPPER_NAME: [MessageHandler(filters.TEXT, receive_topper_name)],
+        }, fallbacks=[CommandHandler("cancel", cancel)]
+    ))
+    
+    # Conversation: Broadcast
+    app.add_handler(ConversationHandler(
+        entry_points=[CallbackQueryHandler(start_broadcast_btn, pattern='^broadcast_flow$')],
+        states={ASK_BROADCAST_MSG: [MessageHandler(filters.TEXT, send_broadcast_btn)]},
+        fallbacks=[CommandHandler("cancel", cancel)]
+    ))
     
     app.add_handler(CallbackQueryHandler(button_handler))
 
+    print("🚀 Pro Bot Starting...")
     app.run_polling()
