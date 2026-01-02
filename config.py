@@ -3,9 +3,9 @@ import pytz
 from datetime import date
 
 # --- ADMIN SETTINGS ---
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  
-OWNER_ID = 1234567890              
-MAIN_GROUP_ID = -100123456789      
+BOT_TOKEN = "8057398123:AAGR7B6bhK0-wUy_ubXo6DZ4c3PPeepgnm4"  
+OWNER_ID = 6761345074              
+MAIN_GROUP_ID = -1003308402459      
 
 DB_FILE = "board_pro_db.json"
 START_IMG = "https://i.postimg.cc/rmDPsqRC/Gemini-Generated-Image-5jbjnc5jbjnc5jbj.png"
