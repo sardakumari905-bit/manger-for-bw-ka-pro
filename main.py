@@ -1,4 +1,3 @@
-# main.py
 import logging
 from threading import Thread
 from flask import Flask
@@ -9,12 +8,12 @@ from telegram.ext import (
 import nest_asyncio
 nest_asyncio.apply()
 
-# --- LOCAL IMPORTS (FIXED HERE) ---
+# --- LOCAL IMPORTS (Corrected Lines) ---
 from config import *
 from handlers import * from jobs import job_check_schedule, job_nightly_report, job_morning_motivation
 from datetime import time
 
-# --- FLASK SERVER (Keep Alive) ---
+# --- FLASK SERVER (For 24/7 Running) ---
 app_web = Flask('')
 @app_web.route('/')
 def home(): return "Board Pro Bot Running 🟢"
@@ -28,7 +27,6 @@ async def post_init(app):
     app.job_queue.run_repeating(job_check_schedule, interval=60, first=10)
     
     # 2. Night Report (9:00 PM IST)
-    # Note: IST timezone config.py se aa raha hai
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=0, tzinfo=IST)) 
     
     # 3. Morning Motivation (5:00 AM IST)
