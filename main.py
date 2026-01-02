@@ -9,7 +9,7 @@ from telegram.ext import (
 import nest_asyncio
 nest_asyncio.apply()
 
-# Local Imports
+# Local Imports (Fix: Separate lines)
 from config import *
 from handlers import * from jobs import job_check_schedule, job_nightly_report, job_morning_motivation
 from datetime import time
@@ -26,9 +26,7 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=lo
 async def post_init(app):
     # Jobs (Timers)
     app.job_queue.run_repeating(job_check_schedule, interval=60, first=10)
-    # Night Report at 9:00 PM
     app.job_queue.run_daily(job_nightly_report, time(hour=21, minute=00, tzinfo=IST)) 
-    # Morning Motivation at 5:00 AM
     app.job_queue.run_daily(job_morning_motivation, time(hour=5, minute=0, tzinfo=IST))
     print("✅ System Online & Jobs Scheduled!")
 
@@ -55,13 +53,20 @@ if __name__ == "__main__":
         }, fallbacks=[CommandHandler("cancel", cancel)]
     ))
 
-    # Conversation: Set Topper (Updated for Subjects)
+    # Conversation: Set Topper (Subject Wise)
     app.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(start_set_topper, pattern='^topper_flow$')],
         states={
             ASK_TOPPER_SUBJECT: [MessageHandler(filters.TEXT, receive_topper_subject)],
             ASK_TOPPER_NAME: [MessageHandler(filters.TEXT, receive_topper_name)],
         }, fallbacks=[CommandHandler("cancel", cancel)]
+    ))
+    
+    # Conversation: Add Admin (Fixed & Added Back)
+    app.add_handler(ConversationHandler(
+        entry_points=[CallbackQueryHandler(start_add_admin_btn, pattern='^add_admin_flow$')],
+        states={ASK_ADMIN_ID: [MessageHandler(filters.TEXT, receive_admin_id_btn)]},
+        fallbacks=[CommandHandler("cancel", cancel)]
     ))
     
     # Conversation: Broadcast
