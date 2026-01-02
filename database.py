@@ -1,8 +1,7 @@
-# database.py
 import json
 import os
 import shutil
-from config import DB_FILE, OWNER_ID, MAIN_GROUP_ID
+from config import DB_FILE, MAIN_GROUP_ID, OWNER_ID
 
 DEFAULT_DATA = {
     "groups": [MAIN_GROUP_ID],
@@ -19,10 +18,7 @@ def load_data():
     try:
         with open(DB_FILE, 'r') as f:
             data = json.load(f)
-            # Ensure basic structure exists
             if "groups" not in data: data["groups"] = [MAIN_GROUP_ID]
-            if "schedule" not in data: data["schedule"] = {}
-            if "auth_users" not in data: data["auth_users"] = []
             return data
     except:
         return DEFAULT_DATA
