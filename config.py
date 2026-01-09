@@ -3,7 +3,7 @@ import pytz
 from datetime import date
 
 # --- ADMIN SETTINGS ---
-BOT_TOKEN = "8057398123:AAGR7B6bhK0-wUy_ubXo6DZ4c3PPeepgnm4"  
+BOT_TOKEN = "8325046107:AAEUf9-YWSHT-G9xpiELrFlxmEKMS650D5o"  
 OWNER_ID = 6761345074              
 MAIN_GROUP_ID = -1003308402459      
 
